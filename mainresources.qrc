@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>Invisible.png</file>
+        <file>Visible.png</file>
+        <file>e7d1b151ea.ico</file>
+    </qresource>
+</RCC>
