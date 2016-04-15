@@ -161,15 +161,18 @@ void ReaderWindow::on_pushButton_2_clicked()
                 }
                 if(temp > cutoff){
                     if(sum == 0)
-                        peak.append(QString::number(x.at(i)) + "  -  ");
+                        peak.append(QString::number(x.at(i)) + " -  ");
                     sum += temp;
                     yc.append(temp);
                 }else{
                     yc.append(0);
                     if( sum > 0){
-                        peak.append(QString::number(x.at(i-1)) + " : \t "+ QString::number(sum) + "\r\n");
+                        peak.append(QString::number(x.at(i-1)) + ":\t "+ QString::number(sum) + "\r\n");
                         sum = 0;
                     }
+                }
+                if(sum > 0 && i == (y.length()-1)){
+                    peak.append(QString::number(x.at(i-1)) + ":\t "+ QString::number(sum) + "\r\n");
                 }
             }
             //graph "cleaned" data
@@ -247,6 +250,9 @@ void ReaderWindow::on_pushButton_2_clicked()
                     peak.append(QString::number(avgX.at(i-1)) + " : "+ QString::number(sum) + "\r\n");
                     sum = 0;
                 }
+            }
+            if(sum > 0 && i == (avgY.length()-1)){
+                peak.append(QString::number(avgX.at(i-1)) + ":\t "+ QString::number(sum) + "\r\n");
             }
         }
         plot->graph(1)->setData(avgX, avgYc);
@@ -345,6 +351,7 @@ void ReaderWindow::on_AddFile_clicked()
     fileList.append(fileNameBox->text());
     cutoffValueList.append(cutoffBox->text().toDouble());
     cutoffTypeList.append(cutoffType);
+    fileVoltageList.append(mainWindow->findChild<QWidget *>("InputPage")->findChild<QLineEdit *>("fileVoltage")->text().toDouble());
 
     if(fileList.length() > 1){
         mainWindow->findChild<QWidget *>("InputPage")->findChild<QComboBox *>("averageCutoffType")->setVisible(true);
@@ -358,6 +365,7 @@ void ReaderWindow::on_AddFile_clicked()
     QPushButton* fileDelete = new QPushButton();
     QLabel*      fileLabel  = new QLabel();
     QLabel*      fileCutoff  = new QLabel();
+    QLabel*      fileVoltage  = new QLabel();
     QString fileLayoutName = "file"+QString::number(fileList.length()-1);
     QString cutoff = "Cutoff: "+cutoffName+" ";
 
@@ -365,6 +373,7 @@ void ReaderWindow::on_AddFile_clicked()
         cutoff+= cutoffBox->text();
     }
 
+    fileVoltage->setText(QString::number(mainWindow->findChild<QWidget *>("InputPage")->findChild<QLineEdit *>("fileVoltage")->text().toDouble())+" V");
     fileLabel->setText(fileNameBox->text());
     fileDelete->setText("Remove");
     fileCutoff->setText(cutoff);
@@ -374,6 +383,7 @@ void ReaderWindow::on_AddFile_clicked()
 
     fileLayout->addWidget(fileLabel);
     fileLayout->addWidget(fileCutoff);
+    fileLayout->addWidget(fileVoltage);
     fileLayout->addStretch();
     fileLayout->addWidget(fileDelete);
     fileBox->setLayout(fileLayout);
@@ -406,6 +416,7 @@ void ReaderWindow::on_RemoveFile_clicked(QString name)
     fileList.removeAt(index);
     cutoffValueList.removeAt(index);
     cutoffTypeList.removeAt(index);
+    fileVoltageList.removeAt(index);
 
     if(fileList.length() > 1){
         mainWindow->findChild<QWidget *>("InputPage")->findChild<QComboBox *>("averageCutoffType")->setVisible(true);
@@ -541,19 +552,6 @@ void ReaderWindow::on_ShowAll_clicked()
 
 //show windows for CI or an error
 void ReaderWindow::on_actionSet_CI_Range_triggered(){
-    int vis = 0;
-    int id = 0;
-    for(int i = 0; i<plot->graphCount() ; i++){
-        if(plot->graph(i)->visible() == true){
-            vis++;
-            id = i;
-        }
-    }
-    if(vis > 1 || vis == 0){
-        QMessageBox::warning(this,"Number of Graphs Invalid","This is more than one graph visible, calculation can only be done on one graph at a time");
-        return;
-    }
-
     QDialog dialog(this);
     // Use a layout allowing to have a label next to each field
     QFormLayout form(&dialog);
@@ -583,40 +581,16 @@ void ReaderWindow::on_actionSet_CI_Range_triggered(){
     QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
     QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
 
-    double start,end;
-
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         // If the user didn't dismiss the dialog, do something with the fields
-        start =fields.at(0)->text().toDouble();
-        end =fields.at(1)->text().toDouble();
-        QList<double> x = plot->graph(id)->data()->keys();
-        QList<QCPData> y = plot->graph(id)->data()->values();
-        double sum = 0;
-        for(int i=0; i<x.length();i++){
-            double point = x.at(i);
-            if(point >= start && point <= end)
-                sum+=y.at(i).value;
-        }
-        CI = sum;
-        peakBox->setText(peakBox->toPlainText() + "\r\n CI "+QString::number(start)+ " - "+QString::number(end)+ " : "+QString::number(sum));
-        qDebug() << QString::number(CI);
+        ciStart =fields.at(0)->text().toDouble();
+        ciEnd =fields.at(1)->text().toDouble();
     }
 }
 
 void ReaderWindow::on_actionSet_EI_Range_triggered(){
-    int vis = 0;
-    int id = 0;
-    for(int i = 0; i<plot->graphCount() ; i++){
-        if(plot->graph(i)->visible() == true){
-            vis++;
-            id = i;
-        }
-    }
-    if(vis > 1 || vis == 0){
-        QMessageBox::warning(this,"Number of Graphs Invalid","This is more than one graph visible, calculation can only be done on one graph at a time");
-        return;
-    }
+
 
     QDialog dialog(this);
     // Use a layout allowing to have a label next to each field
@@ -647,36 +621,213 @@ void ReaderWindow::on_actionSet_EI_Range_triggered(){
     QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
     QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
 
-    double start,end;
 
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         // If the user didn't dismiss the dialog, do something with the fields
-        start =fields.at(0)->text().toDouble();
-        end =fields.at(1)->text().toDouble();
-        QList<double> x = plot->graph(id)->data()->keys();
-        QList<QCPData> y = plot->graph(id)->data()->values();
-        double sum = 0;
-        for(int i=0; i<x.length();i++){
-            double point = x.at(i);
-            if(point >= start && point <= end)
-                sum+=y.at(i).value;
-        }
-        peakBox->setText(peakBox->toPlainText() + "\r\n EI "+QString::number(start)+ " - "+QString::number(end)+ " : "+QString::number(sum));
-        EI = sum;
+        eiStart =fields.at(0)->text().toDouble();
+        eiEnd =fields.at(1)->text().toDouble();
         qDebug() << QString::number(EI);
     }
 }
 
 void ReaderWindow::on_actionCalculate_Ratio_triggered(){
-    double ratio = CI/EI;
+
+    int vis = 0;
+    int id = 0;
+    for(int i = 0; i<plot->graphCount() ; i++){
+        if(plot->graph(i)->visible() == true){
+            vis++;
+            id = i;
+        }
+    }
+    if(vis > 1 || vis == 0){
+        QMessageBox::warning(this,"Number of Graphs Invalid","This is more than one graph visible, calculation can only be done on one graph at a time");
+        return;
+    }
+
+    QString GraphMessage = "\r\n";
+    if(id%2 == 0){
+        GraphMessage += "Orginal";
+    }else{
+        GraphMessage += "Cleaned";
+    }
+    if(id>1){
+        int f = (id/2)-1;
+        GraphMessage += " Graph "+QString::number(f+1);
+
+    }else{
+         GraphMessage += " Average ";
+    }
+    peakBox->setText(peakBox->toPlainText() + GraphMessage);
+    QList<double> x = plot->graph(id)->data()->keys();
+    QList<QCPData> y = plot->graph(id)->data()->values();
+    double sumCI = 0;
+    double sumEI = 0;
+    for(int i=0; i<x.length();i++){
+        double point = x.at(i);
+        if(point >= eiStart && point <= eiEnd)
+            sumEI+=y.at(i).value;
+        if(point >= ciStart && point <= ciEnd)
+            sumCI+=y.at(i).value;
+    }
+    peakBox->setText(peakBox->toPlainText() + "\r\n EI "+QString::number(eiStart)+ " - "+QString::number(eiEnd)+ " : "+QString::number(sumEI));
+    peakBox->setText(peakBox->toPlainText() + "\r\n CI "+QString::number(ciStart)+ " - "+QString::number(ciEnd)+ " : "+QString::number(sumCI));
+
+    double ratio = sumCI/sumEI;
 
     peakBox->setText(peakBox->toPlainText() + "\r\n CI/EI Ratio: "+QString::number(ratio));
 
 }
 
+void ReaderWindow::on_actionCalculate_All_Ratios_triggered(){
+    int id = 0;
+    QList<double> ratios;
+    for(int i = 0; i<plot->graphCount() ; i++){
+        if(i<1)
+            continue;
+        id = i;
+        if(id%2 == 0){
+            continue;
+        }
+
+        QString GraphMessage = "\r\n";
+        GraphMessage += "Cleaned";
+        int f = (id/2)-1;
+        GraphMessage += " Graph "+QString::number(f+1);
+
+        peakBox->setText(peakBox->toPlainText() + GraphMessage);
+        QList<double> x = plot->graph(id)->data()->keys();
+        QList<QCPData> y = plot->graph(id)->data()->values();
+        double sumCI = 0;
+        double sumEI = 0;
+        for(int i=0; i<x.length();i++){
+            double point = x.at(i);
+            if(point >= eiStart && point <= eiEnd)
+                sumEI+=y.at(i).value;
+            if(point >= ciStart && point <= ciEnd)
+                sumCI+=y.at(i).value;
+        }
+        peakBox->setText(peakBox->toPlainText() + "\r\n EI "+QString::number(eiStart)+ " - "+QString::number(eiEnd)+ " : "+QString::number(sumEI));
+        peakBox->setText(peakBox->toPlainText() + "\r\n CI "+QString::number(ciStart)+ " - "+QString::number(ciEnd)+ " : "+QString::number(sumCI));
+
+        double ratio = sumCI/sumEI;
+        ratios.append(ratio);
+        peakBox->setText(peakBox->toPlainText() + "\r\n CI/EI Ratio: "+QString::number(ratio));
+    }
+    QString Message ="\r\n Ratios:";
+    for(int i =0; i<fileList.length(); i++){
+        Message+="\r\n"+QString::number(fileVoltageList.at(i))+",\t"+QString::number(ratios.at(i));
+    }
+     peakBox->setText(peakBox->toPlainText() +Message);
+}
+
+
 void ReaderWindow::on_legendToggle_clicked()
 {
     plot->legend->setVisible(!plot->legend->visible());
     plot->replot();
+}
+
+void ReaderWindow::on_actionSum_Peaks_triggered(){
+    int vis = 0;
+    int id = 0;
+    for(int i = 0; i<plot->graphCount() ; i++){
+        if(plot->graph(i)->visible() == true){
+            vis++;
+            id = i;
+        }
+    }
+    if(vis > 1 || vis == 0){
+        QMessageBox::warning(this,"Number of Graphs Invalid","This is more than one graph visible, calculation can only be done on one graph at a time");
+        return;
+    }
+
+    QList<double> x = plot->graph(id)->data()->keys();
+    QList<QCPData> y = plot->graph(id)->data()->values();
+
+    double sum = 0;
+    QString peak = "";
+
+    if(id%2 == 0){
+        peak += " Original";
+    }else{
+        peak += " Cleaned";
+    }
+    if(id>1){
+        int f = (id/2)-1;
+        peak += " Graph "+QString::number(f+1);
+    }else{
+        peak += " Average ";
+    }
+    peak +="\r\n";
+
+    //cutoff those values
+    for(int i=0; i<x.length();i++){
+        double temp = y.at(i).value;
+        if(temp > 0){
+            if(sum == 0)
+                peak.append(QString::number(x.at(i)) + " - ");
+            sum += temp;
+        }else{
+            if( sum > 0){
+                peak.append(QString::number(x.at(i-1)) + " : "+ QString::number(sum) + "\r\n");
+                sum = 0;
+            }
+        }
+        if(sum > 0 && i == (x.length()-1)){
+            peak.append(QString::number(x.at(i-1)) + ":\t "+ QString::number(sum) + "\r\n");
+        }
+    }
+
+    peakBox->setText(peakBox->toPlainText() + "\r\n\r\n" + peak);
+
+}
+void ReaderWindow::on_actionSum_Peaks_all_graphs_triggered(){
+    int id = 0;
+    for(int i = 0; i<plot->graphCount() ; i++){
+        id = i;
+        if(id%2 == 0){
+            continue;
+        }
+
+        QList<double> x = plot->graph(id)->data()->keys();
+        QList<QCPData> y = plot->graph(id)->data()->values();
+
+        double sum = 0;
+        QString peak = "Cleaned";
+
+        if(id>1){
+            int f = (id/2)-1;
+            peak += " Graph "+QString::number(f+1);
+        }else{
+            peak += " Average";
+        }
+        peak +=" Peaks\r\n";
+
+        //cutoff those values
+        for(int i=0; i<x.length();i++){
+            double temp = y.at(i).value;
+            if(temp > 0){
+                if(sum == 0)
+                    peak.append(QString::number(x.at(i)) + " - ");
+                sum += temp;
+            }else{
+                if( sum > 0){
+                    peak.append(QString::number(x.at(i-1)) + " : "+ QString::number(sum) + "\r\n");
+                    sum = 0;
+                }
+            }
+            if(sum > 0 && i == (x.length()-1)){
+                peak.append(QString::number(x.at(i-1)) + ":\t "+ QString::number(sum) + "\r\n");
+            }
+        }
+
+        peakBox->setText(peakBox->toPlainText() + "\r\n\r\n" + peak);
+    }
+}
+
+void ReaderWindow::on_pushButton_4_clicked()
+{
+    peakBox->setText("");
 }

@@ -56,7 +56,15 @@ private slots:
 
     void on_actionCalculate_Ratio_triggered();
 
+    void on_actionCalculate_All_Ratios_triggered();
+
     void on_legendToggle_clicked();
+
+    void on_actionSum_Peaks_triggered();
+
+    void on_actionSum_Peaks_all_graphs_triggered();
+
+    void on_pushButton_4_clicked();
 
 private:
 
@@ -87,6 +95,7 @@ private:
     QList<QString> fileList;
     QList<double>      cutoffValueList;
     QList<int>      cutoffTypeList;
+    QList<double>      fileVoltageList;
 
 
 
@@ -98,7 +107,12 @@ private:
 
 
     double CI;
+    double ciStart;
+    double ciEnd;
+
     double EI;
+    double eiStart;
+    double eiEnd;
 };
 
 #endif // READERWINDOW_H
