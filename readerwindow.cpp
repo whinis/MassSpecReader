@@ -24,6 +24,14 @@ ReaderWindow::ReaderWindow(QWidget *parent) :
     plot->xAxis->setLabel("M/Z");
     plot->yAxis->setLabel("Intensity");
     plot->legend->setVisible(true);
+    mainWindow->findChild<QWidget *>("GraphPage")->findChild<QAbstractButton *>("xShrink")->setAutoRepeat(true);
+    mainWindow->findChild<QWidget *>("GraphPage")->findChild<QAbstractButton *>("xShrink")->setAutoRepeatDelay(0.5);
+    mainWindow->findChild<QWidget *>("GraphPage")->findChild<QAbstractButton *>("yShrink")->setAutoRepeat(true);
+    mainWindow->findChild<QWidget *>("GraphPage")->findChild<QAbstractButton *>("yShrink")->setAutoRepeatDelay(0.5);
+    mainWindow->findChild<QWidget *>("GraphPage")->findChild<QAbstractButton *>("xGrow")->setAutoRepeat(true);
+    mainWindow->findChild<QWidget *>("GraphPage")->findChild<QAbstractButton *>("xGrow")->setAutoRepeatDelay(0.5);
+    mainWindow->findChild<QWidget *>("GraphPage")->findChild<QAbstractButton *>("yGrow")->setAutoRepeat(true);
+    mainWindow->findChild<QWidget *>("GraphPage")->findChild<QAbstractButton *>("yGrow")->setAutoRepeatDelay(0.5);
 
     peakBox = mainWindow->findChild<QWidget *>("GraphPage")->findChild<QTextEdit *>("PeakList");
 
@@ -716,8 +724,8 @@ void ReaderWindow::on_actionCalculate_All_Ratios_triggered(){
         peakBox->setText(peakBox->toPlainText() + "\r\n CI/EI Ratio: "+QString::number(ratio));
     }
     QString Message ="\r\n Ratios:";
-    for(int i =0; i<fileList.length(); i++){
-        Message+="\r\n"+QString::number(fileVoltageList.at(i))+",\t"+QString::number(ratios.at(i));
+    for(int i =1; i<fileList.length()+1; i++){
+        Message+="\r\n"+QString::number(fileVoltageList.at(i-1))+",\t"+QString::number(ratios.at(i));
     }
      peakBox->setText(peakBox->toPlainText() +Message);
 }
@@ -830,4 +838,35 @@ void ReaderWindow::on_actionSum_Peaks_all_graphs_triggered(){
 void ReaderWindow::on_pushButton_4_clicked()
 {
     peakBox->setText("");
+}
+
+
+void ReaderWindow::on_resetGraph_clicked()
+{
+    plot->graph(2)->rescaleAxes();
+    plot->replot();
+}
+
+void ReaderWindow::on_yGrow_clicked()
+{
+    plot->yAxis->scaleRange(0.95,plot->yAxis->range().center());
+    plot->replot();
+}
+
+void ReaderWindow::on_yShrink_clicked()
+{
+    plot->yAxis->scaleRange(1.05,plot->yAxis->range().center());
+    plot->replot();
+}
+
+void ReaderWindow::on_xShrink_clicked()
+{
+    plot->xAxis->scaleRange(1.05,plot->xAxis->range().center());
+    plot->replot();
+}
+
+void ReaderWindow::on_xGrow_clicked()
+{
+    plot->xAxis->scaleRange(0.95,plot->xAxis->range().center());
+    plot->replot();
 }

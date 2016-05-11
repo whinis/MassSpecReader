@@ -66,6 +66,16 @@ private slots:
 
     void on_pushButton_4_clicked();
 
+    void on_resetGraph_clicked();
+
+    void on_yGrow_clicked();
+
+    void on_yShrink_clicked();
+
+    void on_xShrink_clicked();
+
+    void on_xGrow_clicked();
+
 private:
 
     Ui::ReaderWindow *ui;
@@ -113,6 +123,10 @@ private:
     double EI;
     double eiStart;
     double eiEnd;
+
+    int zoomX;
+
+    int zoomY;
 };
 
 #endif // READERWINDOW_H
