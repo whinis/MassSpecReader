@@ -50,7 +50,7 @@ ReaderWindow::~ReaderWindow()
     delete ui;
 }
 
-void ReaderWindow::on_pushButton_2_clicked()
+void ReaderWindow::on_ProcessButton_clicked()
 {
     QWidget* item = mainWindow->findChild<QWidget *>("VisibilityBox");
     QLayoutItem *child;
@@ -298,10 +298,27 @@ void ReaderWindow::on_graphAction_clicked()
 //select file
 void ReaderWindow::on_pushButton_clicked()
 {
-    fileNameBox->setText(QFileDialog::getOpenFileName(this,
-        tr("Open CSV"), lastDirectory, tr("CSV Files (*.csv *.txt)")));
-    QFileInfo fileInfo(fileNameBox->text());
-    lastDirectory = fileInfo.canonicalFilePath();
+    QFileDialog dialog(this,tr("Open CSV"));
+    dialog.setDirectory(lastDirectory);
+    dialog.setFileMode(QFileDialog::ExistingFiles);
+    dialog.setNameFilter(tr("CSV Files (*.csv *.txt)"));
+
+    if (dialog.exec()){
+        fileNames = dialog.selectedFiles();
+
+        QFileInfo fileInfo(fileNames.at(0));
+        QStringList::Iterator it = fileNames.begin();
+        QString FileName;
+        while(it != fileNames.end()) {
+            if(it!=fileNames.begin())
+                FileName.append(";");
+            FileName.append(*it);
+            ++it;
+        }
+        fileNameBox->setText(FileName);
+        lastDirectory = fileInfo.canonicalFilePath();
+    }
+
 }
 
 //save new cutOff values
@@ -355,49 +372,65 @@ void ReaderWindow::on_AddFile_clicked()
     }
     delete spacer;
 
-    //add file to list
-    fileList.append(fileNameBox->text());
-    cutoffValueList.append(cutoffBox->text().toDouble());
-    cutoffTypeList.append(cutoffType);
-    fileVoltageList.append(mainWindow->findChild<QWidget *>("InputPage")->findChild<QLineEdit *>("fileVoltage")->text().toDouble());
+    int i =1;
+    QString fileName = "";
+    if(fileNames.length() >0)
+        fileName = fileNames.at(0);
+    else if(fileNameBox->text().contains(";") == false)
+        fileName = fileNameBox->text();
 
-    if(fileList.length() > 1){
-        mainWindow->findChild<QWidget *>("InputPage")->findChild<QComboBox *>("averageCutoffType")->setVisible(true);
-    }else{
-        mainWindow->findChild<QWidget *>("InputPage")->findChild<QComboBox *>("averageCutoffType")->setVisible(false);
+    while(fileName!="") {
+        //add file to list
+        fileList.append(fileName);
+        cutoffValueList.append(cutoffBox->text().toDouble());
+        cutoffTypeList.append(cutoffType);
+        fileVoltageList.append(mainWindow->findChild<QWidget *>("InputPage")->findChild<QLineEdit *>("fileVoltage")->text().toDouble());
+
+        if(fileList.length() > 1){
+            mainWindow->findChild<QWidget *>("InputPage")->findChild<QComboBox *>("averageCutoffType")->setVisible(true);
+        }else{
+            mainWindow->findChild<QWidget *>("InputPage")->findChild<QComboBox *>("averageCutoffType")->setVisible(false);
+        }
+
+        //make the needed items in the list
+        QWidget*     fileBox    = new QWidget();
+        QHBoxLayout* fileLayout = new QHBoxLayout();
+        QPushButton* fileDelete = new QPushButton();
+        QLabel*      fileLabel  = new QLabel();
+        QLabel*      fileCutoff  = new QLabel();
+        QLabel*      fileVoltage  = new QLabel();
+        QString fileLayoutName = "file"+QString::number(fileList.length()-1);
+        QString cutoff = "Cutoff: "+cutoffName+" ";
+
+        if(cutoffType >1){
+            cutoff+= cutoffBox->text();
+        }
+
+        fileVoltage->setText(QString::number(mainWindow->findChild<QWidget *>("InputPage")->findChild<QLineEdit *>("fileVoltage")->text().toDouble())+" V");
+        fileLabel->setText(fileName);
+        fileDelete->setText("Remove");
+        fileCutoff->setText(cutoff);
+
+        connect(fileDelete, SIGNAL(clicked()), signalMapper, SLOT(map()));
+        signalMapper->setMapping(fileDelete, fileLayoutName);
+
+        fileLayout->addWidget(fileLabel);
+        fileLayout->addWidget(fileCutoff);
+        fileLayout->addWidget(fileVoltage);
+        fileLayout->addStretch();
+        fileLayout->addWidget(fileDelete);
+        fileBox->setLayout(fileLayout);
+        fileBox->setObjectName(fileLayoutName);
+
+        mainWindow->findChild<QWidget *>("FilesBox")->layout()->addWidget(fileBox);
+        fileName = "";
+        if(fileNames.length() > i){
+            fileName = fileNames.at(i);
+            i++;
+        }
     }
 
-    //make the needed items in the list
-    QWidget*     fileBox    = new QWidget();
-    QHBoxLayout* fileLayout = new QHBoxLayout();
-    QPushButton* fileDelete = new QPushButton();
-    QLabel*      fileLabel  = new QLabel();
-    QLabel*      fileCutoff  = new QLabel();
-    QLabel*      fileVoltage  = new QLabel();
-    QString fileLayoutName = "file"+QString::number(fileList.length()-1);
-    QString cutoff = "Cutoff: "+cutoffName+" ";
-
-    if(cutoffType >1){
-        cutoff+= cutoffBox->text();
-    }
-
-    fileVoltage->setText(QString::number(mainWindow->findChild<QWidget *>("InputPage")->findChild<QLineEdit *>("fileVoltage")->text().toDouble())+" V");
-    fileLabel->setText(fileNameBox->text());
-    fileDelete->setText("Remove");
-    fileCutoff->setText(cutoff);
-
-    connect(fileDelete, SIGNAL(clicked()), signalMapper, SLOT(map()));
-    signalMapper->setMapping(fileDelete, fileLayoutName);
-
-    fileLayout->addWidget(fileLabel);
-    fileLayout->addWidget(fileCutoff);
-    fileLayout->addWidget(fileVoltage);
-    fileLayout->addStretch();
-    fileLayout->addWidget(fileDelete);
-    fileBox->setLayout(fileLayout);
-    fileBox->setObjectName(fileLayoutName);
-
-    mainWindow->findChild<QWidget *>("FilesBox")->layout()->addWidget(fileBox);
+    fileNames.clear();
 
     //readd spacer
     spacer = new QWidget();

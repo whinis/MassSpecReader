@@ -265,7 +265,7 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_5">
           <item>
-           <widget class="QPushButton" name="pushButton_2">
+           <widget class="QPushButton" name="ProcessButton">
             <property name="maximumSize">
              <size>
               <width>200</width>
@@ -299,8 +299,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>298</width>
-             <height>639</height>
+             <width>274</width>
+             <height>118</height>
             </rect>
            </property>
            <property name="maximumSize">
@@ -393,8 +393,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>168</width>
-               <height>554</height>
+               <width>98</width>
+               <height>28</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_6">
